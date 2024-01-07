@@ -1,0 +1,7 @@
+- module: mysql
+  error:
+    enabled: false
+    var.paths: ["/path/to/log/mysql/error.log*"]
+  slowlog:
+    enabled: true
+    var.paths: ["/shared/mysql-slow.log*"]

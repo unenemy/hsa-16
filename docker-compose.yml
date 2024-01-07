@@ -1,0 +1,55 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: hsa-16
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+      MYSQL_SLOW_QUERY_LOG: 1
+      MYSQL_LONG_QUERY_TIME: 0 # Set the threshold time in seconds for a query to be considered slow
+    ports:
+      - "33066:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql.cnf:/etc/mysql/my.cnf    
+      - ./shared:/shared  
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.10.2
+    volumes:
+      - ./logstash/config/logstash-sample.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5000:5000"
+    environment:
+      - ELASTIC_HOSTS=http://elasticsearch:9200  
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.2
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.10.0
+    volumes:
+      - ./filebeat_config/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./filebeat_config/mysql.yml:/usr/share/filebeat/modules.d/mysql.yml
+      - ./shared:/shared
+    depends_on:
+      - logstash
+
+volumes:
+  mysql_data:
+  es_data:
